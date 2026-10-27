@@ -69,13 +69,6 @@ function Sidebar({ user }) {
         </button>
 
         <button
-          className={`nav-item ${isActive('/theory') ? 'active' : ''}`}
-          onClick={() => navigate('/theory')}
-        >
-          Теория
-        </button>
-
-        <button
           className={`nav-item ${isActive('/profile') ? 'active' : ''}`}
           onClick={() => navigate('/profile')}
         >

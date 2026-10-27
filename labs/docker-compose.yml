@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: super_secret_root_password
+    volumes:
+      # Прокидываем скрипт, он выполнится автоматически при первом запуске
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+    networks:
+      - diploma_network # <--- 1. Указываем, что БД сидит в этой сети
+
+  web:
+    image: php:8.2-apache
+    volumes:
+      # Прокидываем папку с кодом лаб внутрь апача
+      - ./src:/var/www/html
+    ports:
+      - "8080:80"
+    depends_on:
+      - db
+    # Команда для установки расширения mysqli при старте контейнера
+    command: bash -c "docker-php-ext-install mysqli && docker-php-ext-enable mysqli && apache2-foreground"
+    networks:
+      - diploma_network # <--- 2. Статичный веб тоже подключаем к этой сети
+
+# <--- 3. Объявляем саму кастомную сеть для всего проекта
+networks:
+  diploma_network:
+    driver: bridge
+    name: diploma_network # Явно задаем фиксированное имя, чтобы Node.js точно знал, куда стучаться

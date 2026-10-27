@@ -38,7 +38,6 @@ function AssignmentPage() {
         <nav className="sidebar-nav">
           <button className="nav-item" onClick={() => navigate('/dashboard')}>Дашборд</button>
           <button className="nav-item" onClick={() => navigate('/vulnerabilities')}>Уязвимости</button>
-          <button className="nav-item" onClick={() => navigate('/theory')}>Теория</button>
           <button className="nav-item active">Задания</button>
           <button className="nav-item" onClick={() => navigate('/profile')}>Профиль</button>
           <button className="nav-item" onClick={() => navigate('/admin')}>Админ-панель</button>

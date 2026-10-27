@@ -506,7 +506,7 @@ function LandingPage() {
           </div>
 
           <div className="footer-bottom">
-            <p>© 2024 CyberLearn. Все права защищены.</p>
+            <p>Дипломной проект Сейткумар Данияр и Чулков Роман</p>
             <div className="footer-legal">
               <a href="/privacy-policy">Политика конфиденциальности</a>
               <a href="/terms-of-use">Условия использования</a>

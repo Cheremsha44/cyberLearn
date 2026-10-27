@@ -73,6 +73,14 @@ const UserModel = {
     return result.affectedRows > 0;
   },
 
+  async updatePassword(userId, passwordHash) {
+    const [result] = await db.query(`UPDATE users SET password = ? WHERE id = ?`, [
+      passwordHash,
+      userId
+    ]);
+    return result.affectedRows > 0;
+  },
+
   async updateRole(id, role) {
     const [result] = await db.query(`UPDATE users SET role = ? WHERE id = ?`, [role, id]);
     return result.affectedRows > 0;
@@ -84,6 +92,104 @@ const UserModel = {
       id
     ]);
     return result.affectedRows > 0;
+  },
+
+  async registerFailedLoginAttempt(userId, maxAttempts, lockMinutes) {
+    const user = await this.findById(userId);
+
+    if (!user) {
+      return {
+        locked: false,
+        attemptsLeft: 0
+      };
+    }
+
+    const currentAttempts = Number(user.failed_login_attempts || 0);
+    const nextAttempts = currentAttempts + 1;
+
+    if (nextAttempts >= maxAttempts) {
+      await db.query(
+        `
+        UPDATE users
+        SET failed_login_attempts = ?,
+            login_locked_until = DATE_ADD(NOW(), INTERVAL ? MINUTE)
+        WHERE id = ?
+        `,
+        [maxAttempts, lockMinutes, userId]
+      );
+
+      const [[lockedUser]] = await db.query(
+        `
+        SELECT
+          login_locked_until,
+          GREATEST(TIMESTAMPDIFF(SECOND, NOW(), login_locked_until), 0) AS retry_after_seconds
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+        `,
+        [userId]
+      );
+
+      return {
+        locked: true,
+        attemptsLeft: 0,
+        lockedUntil: lockedUser?.login_locked_until || null,
+        retryAfterSeconds: Number(lockedUser?.retry_after_seconds || 0)
+      };
+    }
+
+    await db.query(
+      `
+      UPDATE users
+      SET failed_login_attempts = ?,
+          login_locked_until = NULL
+      WHERE id = ?
+      `,
+      [nextAttempts, userId]
+    );
+
+    return {
+      locked: false,
+      attemptsLeft: Math.max(0, maxAttempts - nextAttempts),
+      lockedUntil: null,
+      retryAfterSeconds: 0
+    };
+  },
+
+  async resetLoginProtection(userId) {
+    await db.query(
+      `
+      UPDATE users
+      SET failed_login_attempts = 0,
+          login_locked_until = NULL
+      WHERE id = ?
+      `,
+      [userId]
+    );
+  },
+
+  async getLoginLockStatus(userId) {
+    const [[row]] = await db.query(
+      `
+      SELECT
+        login_locked_until,
+        GREATEST(TIMESTAMPDIFF(SECOND, NOW(), login_locked_until), 0) AS retry_after_seconds,
+        CASE
+          WHEN login_locked_until IS NOT NULL AND login_locked_until > NOW() THEN 1
+          ELSE 0
+        END AS is_locked
+      FROM users
+      WHERE id = ?
+      LIMIT 1
+      `,
+      [userId]
+    );
+
+    return {
+      isLocked: Number(row?.is_locked || 0) === 1,
+      lockedUntil: row?.login_locked_until || null,
+      retryAfterSeconds: Number(row?.retry_after_seconds || 0)
+    };
   },
 
   /* ======================

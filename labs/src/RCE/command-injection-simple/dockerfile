@@ -1,0 +1,16 @@
+FROM node:18-alpine
+
+WORKDIR /var/www/html
+
+# Создаем пустой файл, в который твой контроллер потом смонтирует реальный флаг
+RUN echo "flag{dummy}" > /flag.txt
+
+COPY package*.json ./
+RUN npm init -y && npm install express
+COPY . .
+
+# Скрипт тоже делаем под sh
+RUN chmod +x stock_checker.sh
+
+EXPOSE 80
+CMD ["node", "app.js"]

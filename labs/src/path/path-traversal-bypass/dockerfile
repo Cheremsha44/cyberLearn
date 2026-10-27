@@ -1,0 +1,11 @@
+FROM node:18-alpine
+WORKDIR /var/www/html
+RUN echo "flag{dummy}" > /flag.txt
+RUN mkdir logs && \
+   echo "Log entry 1" > logs/access.log && \
+   echo "Error 500" > logs/error.log
+COPY package*.json ./
+RUN npm init -y && npm install express
+COPY . .
+EXPOSE 80
+CMD ["node", "app.js"]

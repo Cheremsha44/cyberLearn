@@ -23,6 +23,13 @@ body {
 
 /* Remove horizontal scroll globally */
 html, body {
+  background: #01040d;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
   max-width: 100vw;
+}
+
+#root {
+  min-height: 100vh;
+  background: #01040d;
 }

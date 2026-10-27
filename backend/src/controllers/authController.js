@@ -21,7 +21,6 @@ const AuthController = {
     }
   },
 
-  // POST /auth/register
   async register(req, res) {
     try {
       const { username, email, password } = req.body;
@@ -49,13 +48,13 @@ const AuthController = {
     }
   },
 
-  // POST /auth/login
   async login(req, res) {
     try {
       const { email, password } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({
+          code: 'AUTH_MISSING_CREDENTIALS',
           message: 'Email and password are required'
         });
       }
@@ -71,7 +70,72 @@ const AuthController = {
         user
       });
     } catch (error) {
-      return res.status(401).json({
+      const payload = {
+        code: error.code || 'AUTH_LOGIN_FAILED',
+        message: error.message
+      };
+
+      if (typeof error.attemptsLeft === 'number') {
+        payload.attemptsLeft = error.attemptsLeft;
+      }
+
+      if (error.lockedUntil) {
+        payload.lockedUntil = error.lockedUntil;
+      }
+
+      if (typeof error.retryAfterMinutes === 'number') {
+        payload.retryAfterMinutes = error.retryAfterMinutes;
+      }
+
+      if (typeof error.retryAfterSeconds === 'number') {
+        payload.retryAfterSeconds = error.retryAfterSeconds;
+      }
+
+      if (typeof error.lockDurationMinutes === 'number') {
+        payload.lockDurationMinutes = error.lockDurationMinutes;
+      }
+
+      return res.status(error.status || 401).json(payload);
+    }
+  },
+
+  async forgotPassword(req, res) {
+    try {
+      const { email, origin } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          code: 'AUTH_EMAIL_REQUIRED',
+          message: 'Email is required'
+        });
+      }
+
+      const result = await AuthService.requestPasswordReset({ email, origin });
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(error.status || 500).json({
+        code: error.code || 'AUTH_FORGOT_PASSWORD_FAILED',
+        message: error.message
+      });
+    }
+  },
+
+  async resetPassword(req, res) {
+    try {
+      const { token, password } = req.body;
+
+      if (!token || !password) {
+        return res.status(400).json({
+          code: 'AUTH_RESET_PAYLOAD_REQUIRED',
+          message: 'Token and password are required'
+        });
+      }
+
+      const result = await AuthService.resetPassword({ token, password });
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(error.status || 400).json({
+        code: error.code || 'AUTH_RESET_PASSWORD_FAILED',
         message: error.message
       });
     }

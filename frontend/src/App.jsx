@@ -1,15 +1,12 @@
 import { useEffect } from 'react';
-import { BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import LandingPage from './pages/LandingPage/LandingPage';
 import LoginPage from './pages/LoginPage/LoginPage';
 import RegisterPage from './pages/RegisterPage/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage/DashboardPage';
-import TheoryPage from './pages/TheoryPage/TheoryPage';
 import ProfilePage from './pages/ProfilePage/ProfilePage';
 import AdminPage from './pages/AdminPage/AdminPage';
 import AssignmentPage from './pages/AssignmentPage/AssignmentPage';
@@ -27,8 +24,6 @@ import ExerciseTaskPage from './pages/Exercises/ExerciseTaskPage';
 import './App.css';
 
 function App() {
-
-  /* ===== START STUDY SESSION ===== */
   useEffect(() => {
     const token = localStorage.getItem('token');
 
@@ -37,7 +32,6 @@ function App() {
     }
   }, []);
 
-  /* ===== SAVE STUDY TIME ON EXIT ===== */
   useEffect(() => {
     const saveStudyTime = () => {
       const token = localStorage.getItem('token');
@@ -53,10 +47,10 @@ function App() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token}`
           },
           body: JSON.stringify({ minutes }),
-          keepalive: true,
+          keepalive: true
         });
       }
 
@@ -74,33 +68,24 @@ function App() {
     <BrowserRouter
       future={{
         v7_startTransition: true,
-        v7_relativeSplatPath: true,
+        v7_relativeSplatPath: true
       }}
     >
       <div className="app">
         <Routes>
-
-          {/* PUBLIC */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-use" element={<TermsOfUsePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-          {/* PRIVATE */}
           <Route
             path="/dashboard"
             element={
               <PrivateRoute>
                 <DashboardPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/theory"
-            element={
-              <PrivateRoute>
-                <TheoryPage />
               </PrivateRoute>
             }
           />
@@ -121,7 +106,6 @@ function App() {
             }
           />
 
-          {/* VULNERABILITIES */}
           <Route
             path="/vulnerabilities"
             element={
@@ -139,7 +123,6 @@ function App() {
             }
           />
 
-          {/* EXERCISES */}
           <Route
             path="/exercises/:code"
             element={
@@ -157,7 +140,6 @@ function App() {
             }
           />
 
-          {/* ADMIN */}
           <Route
             path="/admin"
             element={
@@ -167,9 +149,7 @@ function App() {
             }
           />
 
-          {/* FALLBACK */}
           <Route path="*" element={<Navigate to="/" replace />} />
-
         </Routes>
       </div>
     </BrowserRouter>

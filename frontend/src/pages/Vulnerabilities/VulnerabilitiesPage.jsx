@@ -5,7 +5,6 @@ import { Database,
   ShieldAlert,
   Terminal,
   Search,
-  Filter,
   ChevronRight
 } from 'lucide-react';
 
@@ -170,7 +169,7 @@ function VulnerabilitiesPage() {
         <div>
           <h1 className="page-title">Каталог уязвимостей</h1>
           <p className="page-subtitle">
-            Изучайте и практикуйтесь в поиске уязвимостей безопасности
+            Дипломной проект Сейткумар Данияр и Чулков Роман
           </p>
         </div>
 
@@ -181,10 +180,6 @@ function VulnerabilitiesPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-
-          <Button variant="outline" leftIcon={<Filter size={16} />}>
-            Фильтры
-          </Button>
         </div>
       </header>
 

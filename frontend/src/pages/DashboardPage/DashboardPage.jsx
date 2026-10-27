@@ -1,322 +1,342 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
-import { Input } from '../../components/ui/Input/Input';
 import { Button } from '../../components/ui/Button/Button';
 
 import './DashboardPage.css';
 import { getActivityFeed } from '../../services/activityApi';
-import { getAllExercisesStatus, getMyRating } from '../../services/api';
+import { getAllExercisesStatus, getMe, getMyRating } from '../../services/api';
 
 function getUserFromStorage() {
-  try {
-    return JSON.parse(localStorage.getItem('user')) || {};
-  } catch {
-    return {};
-  }
+   try {
+      return JSON.parse(localStorage.getItem('user')) || {};
+   } catch {
+      return {};
+   }
 }
 
+function formatActivityTime(value) {
+   const date = new Date(value);
+   return date.toLocaleString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+   });
+}
+
+const DIFFICULTY_RU = {
+   easy: 'Легкий',
+   medium: 'Средний',
+   hard: 'Сложный',
+   unknown: 'Неизвестно'
+};
+
+const DIFFICULTY_ORDER = {
+   easy: 1,
+   medium: 2,
+   hard: 3,
+   unknown: 99
+};
+
 function DashboardPage() {
-  const navigate = useNavigate();
-  const user = getUserFromStorage();
-  const [activityFeed, setActivityFeed] = useState([]);
-  const [loadingFeed, setLoadingFeed] = useState(true);
-  const [feedError, setFeedError] = useState(null);
+   const navigate = useNavigate();
+   const [user, setUser] = useState(getUserFromStorage());
 
-  const [exercises, setExercises] = useState([]);
-  const [loadingExercises, setLoadingExercises] = useState(true);
-  const [sortBy, setSortBy] = useState('order'); // 'order' | 'difficulty'
-  const [showAll, setShowAll] = useState(false);
-  const [rating, setRating] = useState({ rank: 0, totalParticipants: 0 });
-  const [loadingRating, setLoadingRating] = useState(true);
+   const [activityFeed, setActivityFeed] = useState([]);
+   const [loadingFeed, setLoadingFeed] = useState(true);
+   const [feedError, setFeedError] = useState(null);
 
-  useEffect(() => {
-    async function fetchFeed() {
-      setLoadingFeed(true);
-      setFeedError(null);
-      try {
-        const feedData = await getActivityFeed();
-        const allActivities = (feedData.feed || []).map(item => {
-          if (item.type === 'module') {
-            return {
-              type: 'module',
-              action: 'Завершен модуль',
-              title: item.title,
-              course: item.course_title,
-              time: item.completed_at
-            };
-          } else {
-            return {
-              type: 'course',
-              action: 'Завершен курс',
-              title: item.course_title,
-              time: item.completed_at
-            };
-          }
-        });
-        setActivityFeed(allActivities);
-      } catch (e) {
-        setFeedError(e.message);
-      } finally {
-        setLoadingFeed(false);
+   const [exercises, setExercises] = useState([]);
+   const [loadingExercises, setLoadingExercises] = useState(true);
+   const [sortBy, setSortBy] = useState('order');
+   const [showAll, setShowAll] = useState(false);
+
+   const [rating, setRating] = useState({ rank: 0, totalParticipants: 0 });
+   const [loadingRating, setLoadingRating] = useState(true);
+
+   useEffect(() => {
+      async function loadUser() {
+         try {
+            const freshUser = await getMe();
+            setUser(freshUser);
+            localStorage.setItem('user', JSON.stringify(freshUser));
+         } catch (error) {
+            console.error('Failed to load user:', error);
+         }
       }
-    }
-    fetchFeed();
-  }, []);
 
-  useEffect(() => {
-    async function loadExercises() {
-      setLoadingExercises(true);
-      try {
-        const data = await getAllExercisesStatus();
-        setExercises(Array.isArray(data) ? data : []);
-      } catch (e) {
-        console.error("Failed to load exercises:", e);
-        setExercises([]);
-      } finally {
-        setLoadingExercises(false);
+      loadUser();
+   }, []);
+
+   useEffect(() => {
+      async function fetchFeed() {
+         setLoadingFeed(true);
+         setFeedError(null);
+
+         try {
+            const feedData = await getActivityFeed();
+
+            const allActivities = (feedData.feed || []).map(item => {
+               if (item.type === 'module') {
+                  return {
+                     type: 'module',
+                     action: 'Завершен модуль',
+                     title: item.title,
+                     course: item.course_title,
+                     time: item.completed_at
+                  };
+               }
+
+               return {
+                  type: 'course',
+                  action: 'Завершен курс',
+                  title: item.course_title,
+                  time: item.completed_at
+               };
+            });
+
+            setActivityFeed(allActivities);
+         } catch (error) {
+            setFeedError(error.message);
+         } finally {
+            setLoadingFeed(false);
+         }
       }
-    }
-    loadExercises();
-  }, []);
 
-  useEffect(() => {
-    async function loadRating() {
-      setLoadingRating(true);
-      try {
-        const data = await getMyRating();
-        setRating({
-          rank: Number(data?.rank || 0),
-          totalParticipants: Number(data?.totalParticipants || 0),
-        });
-      } catch (e) {
-        console.error('Failed to load rating:', e);
-        setRating({ rank: 0, totalParticipants: 0 });
-      } finally {
-        setLoadingRating(false);
+      fetchFeed();
+   }, []);
+
+   useEffect(() => {
+      async function loadExercises() {
+         setLoadingExercises(true);
+
+         try {
+            const data = await getAllExercisesStatus();
+            setExercises(Array.isArray(data) ? data : []);
+         } catch (error) {
+            console.error('Failed to load exercises:', error);
+            setExercises([]);
+         } finally {
+            setLoadingExercises(false);
+         }
       }
-    }
 
-    loadRating();
-  }, []);
+      loadExercises();
+   }, []);
 
-  const {
-    username = '',
-    completed_courses = 0,
-    level = 0,
-    study_hours = 0,
-    avatar
-  } = user;
+   useEffect(() => {
+      async function loadRating() {
+         setLoadingRating(true);
 
-  const ratingValue = loadingRating
-    ? '...'
-    : `${rating.rank || 0}/${rating.totalParticipants || 0}`;
+         try {
+            const data = await getMyRating();
+            setRating({
+               rank: Number(data?.rank || 0),
+               totalParticipants: Number(data?.totalParticipants || 0)
+            });
+         } catch (error) {
+            console.error('Failed to load rating:', error);
+            setRating({ rank: 0, totalParticipants: 0 });
+         } finally {
+            setLoadingRating(false);
+         }
+      }
 
-  const stats = [
-    { label: 'Завершено курсов', value: completed_courses, color: 'violet' },
-    { label: 'Текущий уровень', value: level, color: 'emerald' },
-    { label: 'Рейтинг', value: ratingValue, color: 'amber' },
-    { label: 'Часов обучения', value: study_hours, color: 'blue' }
-  ];
+      loadRating();
+   }, []);
 
-  // Logic for exercises table
-  // Filter only incomplete exercises (is_completed === 0)
-  const incompleteExercises = exercises.filter(ex => !ex.is_completed);
+   const {
+      username = '',
+      completed_courses = 0,
+      level = 0,
+      study_hours = 0,
+      avatar
+   } = user;
 
-  const getDifficultyKey = (diff) => {
-    if (!diff) return 'unknown';
-    const d = diff.toLowerCase();
-    if (d === 'easy' || d === 'beginner') return 'easy';
-    if (d === 'medium' || d === 'intermediate') return 'medium';
-    if (d === 'hard' || d === 'advanced') return 'hard';
-    return 'unknown';
-  };
+   const ratingValue = loadingRating
+      ? '...'
+      : `${rating.rank || 0}/${rating.totalParticipants || 0}`;
 
-  const difficultyRu = {
-    'easy': 'Легкий',
-    'medium': 'Средний',
-    'hard': 'Сложный',
-    'unknown': 'Неизвестно'
-  };
+   const totalMinutes = Number(study_hours) || 0;
+   const studyHours = Math.floor(totalMinutes / 60);
+   const remainingMinutes = totalMinutes % 60;
+   const studyTimeValue = studyHours > 0
+      ? `${studyHours} ч ${remainingMinutes} мин`
+      : `${remainingMinutes} мин`;
 
-  const difficultyOrder = {
-    'easy': 1,
-    'medium': 2,
-    'hard': 3,
-    'unknown': 99
-  };
+   const stats = [
+      { label: 'Завершено курсов', value: completed_courses, color: 'violet' },
+      { label: 'Текущий уровень', value: level, color: 'emerald' },
+      { label: 'Рейтинг', value: ratingValue, color: 'amber' },
+      { label: 'Время обучения', value: studyTimeValue, color: 'blue' }
+   ];
 
-  const sortedExercises = [...incompleteExercises].sort((a, b) => {
-    if (sortBy === 'difficulty') {
-      const da = difficultyOrder[getDifficultyKey(a.difficulty)];
-      const db = difficultyOrder[getDifficultyKey(b.difficulty)];
-      return da - db;
-    }
-    // Default: by order (Backend returns sorted by vulnerability ID and order_index)
-    // We can rely on original index if we want absolute stability or just keep array order
-    return 0;
-  });
+   const incompleteExercises = useMemo(
+      () => exercises.filter(exercise => !exercise.is_completed),
+      [exercises]
+   );
 
-  return (
-    <AppLayout>
-      <div className="dashboard-content">
-        {/* HEADER */}
-      <header className="dashboard-header">
-        <div>
-          <h1 className="dashboard-title">Привет, {username}! 👋</h1>
-          <p className="dashboard-subtitle">
-            Готов продолжить обучение кибербезопасности?
-          </p>
-        </div>
+   const getDifficultyKey = diff => {
+      if (!diff) return 'unknown';
 
-        <div className="header-actions">
-          <div className="search-wrapper">
-            <Input
-              placeholder="Поиск курсов..."
-              icon={<Search size={16} />}
-            />
-          </div>
+      const value = diff.toLowerCase();
+      if (value === 'easy' || value === 'beginner') return 'easy';
+      if (value === 'medium' || value === 'intermediate') return 'medium';
+      if (value === 'hard' || value === 'advanced') return 'hard';
 
-          <button className="notification-btn">
-            <Bell size={20} />
-            <span className="notification-badge" />
-          </button>
+      return 'unknown';
+   };
 
-          <div className="user-avatar">
-            <img
-              src={`http://localhost:5000/uploads/avatars/${avatar || 'default-avatar.png'}`}
-              alt="avatar"
-            />
-          </div>
-        </div>
-      </header>
+   const sortedExercises = useMemo(() => {
+      if (sortBy !== 'difficulty') {
+         return incompleteExercises;
+      }
 
-      {/* STATS */}
-      <div className="stats-grid">
-        {stats.map((stat, i) => (
-          <div key={i} className={`stat-card stat-${stat.color}`}>
-            <div className="stat-content">
-              <div className="stat-value">{stat.value}</div>
-              <div className="stat-label">{stat.label}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      return [...incompleteExercises].sort((a, b) => {
+         const first = DIFFICULTY_ORDER[getDifficultyKey(a.difficulty)];
+         const second = DIFFICULTY_ORDER[getDifficultyKey(b.difficulty)];
+         return first - second;
+      });
+   }, [incompleteExercises, sortBy]);
 
-      {/* EXERCISES TABLE SECTION */}
-      <section className="courses-section">
-        <div className="section-header">
-          <h2>Активные задачи</h2>
-          <div className="section-tools">
-            <div className="sort-control">
-              <span className="sort-label">Сортировать по:</span>
-              <select
-                className="sort-select"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="order">Порядку</option>
-                <option value="difficulty">Сложности</option>
-              </select>
+   const visibleExercises = showAll ? sortedExercises : sortedExercises.slice(0, 3);
+
+   return (
+      <AppLayout>
+         <div className="dashboard-content">
+            <header className="dashboard-header">
+               <div>
+                  <h1 className="dashboard-title">Привет, {username}! 👋</h1>
+                  <p className="dashboard-subtitle">
+                     Дипломный проект Чулкова Романа и Сейткумар Данияра
+                  </p>
+               </div>
+
+               <div className="header-actions">
+
+                  <div className="user-avatar">
+                     <img
+                        src={`http://localhost:5000/uploads/avatars/${avatar || 'default-avatar.png'}`}
+                        alt="avatar"
+                     />
+                  </div>
+               </div>
+            </header>
+
+            <div className="stats-grid">
+               {stats.map((stat, index) => (
+                  <div key={index} className={`stat-card stat-${stat.color}`}>
+                     <div className="stat-content">
+                        <div className="stat-value">{stat.value}</div>
+                        <div className="stat-label">{stat.label}</div>
+                     </div>
+                  </div>
+               ))}
             </div>
 
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowAll(!showAll)}
-            >
-              {showAll ? 'Свернуть' : 'Показать все'}
-            </Button>
-          </div>
-        </div>
+            <section className="courses-section">
+               <div className="section-header">
+                  <h2>Активные задачи</h2>
+                  <div className="section-tools">
+                     <div className="sort-control">
+                        <span className="sort-label">Сортировать по:</span>
+                        <select
+                           className="sort-select"
+                           value={sortBy}
+                           onChange={event => setSortBy(event.target.value)}
+                        >
+                           <option value="order">Порядку</option>
+                           <option value="difficulty">Сложности</option>
+                        </select>
+                     </div>
 
-        {loadingExercises ? (
-          <div className="section-loading">Загрузка задач...</div>
-        ) : incompleteExercises.length === 0 ? (
-          <div className="congrats-message">
-            🎉 Поздравляем! Все задачи выполнены!
-          </div>
-        ) : (
-          <div className="table-scroll">
-            <table className="exercises-table">
-              <thead>
-                <tr>
-                  <th>Название</th>
-                  <th>Категория</th>
-                  <th>Сложность</th>
-                  <th>Действие</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(showAll ? sortedExercises : sortedExercises.slice(0, 3)).map((ex) => (
-                  <tr key={ex.id}>
-                    <td>{ex.title}</td>
-                    <td>{ex.vulnerability_title}</td>
-                    <td>
-                      <span className={`difficulty difficulty-${getDifficultyKey(ex.difficulty)}`}>
-                        {difficultyRu[getDifficultyKey(ex.difficulty)] || ex.difficulty}
-                      </span>
-                    </td>
-                    <td>
-                      <Button
+                     <Button
                         size="sm"
-                        onClick={() => navigate(`/exercises/${ex.vulnerability_code}/${ex.order_index}`)}
-                      >
-                        Начать
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                        variant="outline"
+                        onClick={() => setShowAll(!showAll)}
+                     >
+                        {showAll ? 'Свернуть' : 'Показать все'}
+                     </Button>
+                  </div>
+               </div>
 
-      {/* ACTIVITY */}
-      <section className="activity-section">
-        <h2>Последняя активность</h2>
-        <div className="activity-list">
-          {loadingFeed ? (
-            <div className="activity-item">Загрузка...</div>
-          ) : feedError ? (
-            <div className="activity-item activity-error">{feedError}</div>
-          ) : activityFeed.length === 0 ? (
-            <div className="activity-item">Нет активности</div>
-          ) : (
-            activityFeed.map((activity, i) => (
-              <div
-                key={i}
-                className={`activity-item activity-${activity.type}`}
-              >
-                <div className="activity-icon" />
-                <div className="activity-content">
-                  <div className="activity-title">
-                    {activity.action}: {activity.title}
-                    {activity.type === 'module' && activity.course ? (
-                      <span className="activity-course">
-                        ({activity.course})
-                      </span>
-                    ) : null}
+               {loadingExercises ? (
+                  <div className="section-loading">Загрузка задач...</div>
+               ) : incompleteExercises.length === 0 ? (
+                  <div className="congrats-message">
+                     🎉 Поздравляем! Все задачи выполнены!
                   </div>
-                  <div className="activity-time">
-                    {(() => {
-                      const d = new Date(activity.time);
-                      return d.toLocaleString(undefined, {
-                        hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
-                      });
-                    })()}
+               ) : (
+                  <div className="table-scroll">
+                     <table className="exercises-table">
+                        <thead>
+                           <tr>
+                              <th>Название</th>
+                              <th>Категория</th>
+                              <th>Сложность</th>
+                              <th>Действие</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {visibleExercises.map(exercise => (
+                              <tr key={exercise.id}>
+                                 <td>{exercise.title}</td>
+                                 <td>{exercise.vulnerability_title}</td>
+                                 <td>
+                                    <span className={`difficulty difficulty-${getDifficultyKey(exercise.difficulty)}`}>
+                                       {DIFFICULTY_RU[getDifficultyKey(exercise.difficulty)] || exercise.difficulty}
+                                    </span>
+                                 </td>
+                                 <td>
+                                    <Button
+                                       size="sm"
+                                       onClick={() => navigate(`/exercises/${exercise.vulnerability_code}/${exercise.order_index}`)}
+                                    >
+                                       Начать
+                                    </Button>
+                                 </td>
+                              </tr>
+                           ))}
+                        </tbody>
+                     </table>
                   </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-      </div>
-    </AppLayout>
-  );
+               )}
+            </section>
+
+            <section className="activity-section">
+               <h2>Последняя активность</h2>
+               <div className="activity-list">
+                  {loadingFeed ? (
+                     <div className="activity-item activity-placeholder">Загрузка...</div>
+                  ) : feedError ? (
+                     <div className="activity-item activity-placeholder activity-error">{feedError}</div>
+                  ) : activityFeed.length === 0 ? (
+                     <div className="activity-item activity-placeholder">Нет активности</div>
+                  ) : (
+                     activityFeed.map((activity, index) => (
+                        <div key={index} className={`activity-item activity-${activity.type}`}>
+                           <div className="activity-icon" />
+                           <div className="activity-content">
+                              <div className="activity-title-row">
+                                 <div className="activity-title">
+                                    {activity.action}: {activity.title}
+                                 </div>
+                                 <div className="activity-time">{formatActivityTime(activity.time)}</div>
+                              </div>
+                              {activity.type === 'module' && activity.course ? (
+                                 <span className="activity-subtitle">({activity.course})</span>
+                              ) : null}
+                           </div>
+                        </div>
+                     ))
+                  )}
+               </div>
+            </section>
+         </div>
+      </AppLayout>
+   );
 }
 
 export default DashboardPage;

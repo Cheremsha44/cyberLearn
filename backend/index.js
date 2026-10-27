@@ -4,7 +4,7 @@ const path = require('path');
 require('dotenv').config();
 
 const db = require('./src/config/db');
-const { ensureFreezeSchema } = require('./src/config/ensureSchema');
+const { ensureFreezeSchema, ensureAuthSchema } = require('./src/config/ensureSchema');
 
 // ===== ROUTES =====
 const authRoutes = require('./src/routes/auth');
@@ -55,6 +55,7 @@ app.get('/health', async (req, res) => {
 async function startServer() {
   try {
     await ensureFreezeSchema();
+    await ensureAuthSchema();
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {

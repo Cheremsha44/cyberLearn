@@ -5,9 +5,9 @@ export async function registerUser({ username, email, password }) {
   const response = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ username, email, password }),
+    body: JSON.stringify({ username, email, password })
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -20,18 +20,67 @@ export async function loginUser({ email, password }) {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password })
   });
   if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || 'Login failed');
+    const payload = await response.json().catch(() => ({}));
+    const error = new Error(payload.message || 'Login failed');
+
+    error.status = response.status;
+    error.code = payload.code;
+    error.attemptsLeft = payload.attemptsLeft;
+    error.lockedUntil = payload.lockedUntil;
+    error.retryAfterMinutes = payload.retryAfterMinutes;
+    error.retryAfterSeconds = payload.retryAfterSeconds;
+    error.lockDurationMinutes = payload.lockDurationMinutes;
+
+    throw error;
   }
   return response.json();
 }
 
-// Обновить bio пользователя
+export async function requestPasswordReset({ email, origin }) {
+  const response = await fetch(`${API_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email, origin })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.message || 'Password reset request failed');
+    error.status = response.status;
+    error.code = payload.code;
+    throw error;
+  }
+
+  return payload;
+}
+
+export async function resetPassword({ token, password }) {
+  const response = await fetch(`${API_URL}/auth/reset-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ token, password })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.message || 'Password reset failed');
+    error.status = response.status;
+    error.code = payload.code;
+    throw error;
+  }
+
+  return payload;
+}
+
 export async function updateUserBio(bio) {
   const token = localStorage.getItem('token');
 
@@ -39,7 +88,7 @@ export async function updateUserBio(bio) {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({ bio })
   });
@@ -55,14 +104,11 @@ export async function updateUserBio(bio) {
 export async function getAllExercisesStatus() {
   const token = localStorage.getItem('token');
 
-  const res = await fetch(
-    `${API_URL}/exercises/status`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+  const res = await fetch(`${API_URL}/exercises/status`, {
+    headers: {
+      Authorization: `Bearer ${token}`
     }
-  );
+  });
 
   if (!res.ok) {
     throw new Error('Не удалось загрузить задания');
@@ -71,20 +117,19 @@ export async function getAllExercisesStatus() {
   return res.json();
 }
 
-
 export async function uploadAvatar(userId, file) {
   const formData = new FormData();
-  formData.append("userId", userId);
-  formData.append("avatar", file);
+  formData.append('userId', userId);
+  formData.append('avatar', file);
 
-  const res = await fetch("http://localhost:5000/api/upload/avatar", {
-    method: "POST",
-    body: formData,
+  const res = await fetch('http://localhost:5000/api/upload/avatar', {
+    method: 'POST',
+    body: formData
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || "Upload failed");
+    throw new Error(err.message || 'Upload failed');
   }
 
   return res.json();
@@ -109,8 +154,6 @@ export async function getVulnerabilityByCode(code) {
   return data;
 }
 
-
-
 export async function getExercisesByCode(code) {
   const res = await fetch(`${API_URL}/exercises/${code}`);
   const data = await res.json().catch(() => ({}));
@@ -122,18 +165,14 @@ export async function getExercisesByCode(code) {
   return Array.isArray(data) ? data : [];
 }
 
-
 export async function getExerciseByOrder(code, order) {
   const token = localStorage.getItem('token');
 
-  const res = await fetch(
-    `${API_URL}/exercises/${code}/${order}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+  const res = await fetch(`${API_URL}/exercises/${code}/${order}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
     }
-  );
+  });
 
   if (!res.ok) {
     const payload = await res.json().catch(() => ({}));
@@ -143,18 +182,14 @@ export async function getExerciseByOrder(code, order) {
   return res.json();
 }
 
-
 export async function getVulnerabilityProgress(code) {
   const token = localStorage.getItem('token');
 
-  const res = await fetch(
-    `http://localhost:5000/api/progress/vulnerability/${code}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+  const res = await fetch(`http://localhost:5000/api/progress/vulnerability/${code}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
     }
-  );
+  });
 
   if (!res.ok) {
     throw new Error('Не удалось загрузить прогресс');
@@ -162,7 +197,6 @@ export async function getVulnerabilityProgress(code) {
 
   return res.json();
 }
-
 
 export async function getMe() {
   const res = await fetch('http://localhost:5000/api/users/me', {
@@ -191,4 +225,3 @@ export async function getMyRating() {
 
   return res.json();
 }
-

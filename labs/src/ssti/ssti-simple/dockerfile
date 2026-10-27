@@ -1,0 +1,13 @@
+FROM node:18-alpine
+
+WORKDIR /var/www/html
+
+RUN echo "flag{dummy}" > /flag.txt
+
+COPY package*.json ./
+# Устанавливаем express и ejs
+RUN npm init -y && npm install express ejs
+COPY . .
+
+EXPOSE 80
+CMD ["node", "app.js"]

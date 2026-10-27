@@ -50,8 +50,35 @@ async function countByUser(userId) {
   return Number(row?.cnt || 0);
 }
 
+/**
+ * Посчитать количество полностью завершенных курсов пользователем
+ * (курс завершен, если выполнены все его упражнения).
+ */
+async function countCompletedCoursesByUser(userId) {
+  const [[row]] = await db.query(
+    `
+    SELECT COUNT(*) AS cnt
+    FROM (
+      SELECT v.id
+      FROM vulnerabilities v
+      JOIN exercises e ON e.vulnerability_id = v.id
+      LEFT JOIN user_exercises ue
+        ON ue.exercise_id = e.id
+        AND ue.user_id = ?
+      GROUP BY v.id
+      HAVING COUNT(e.id) > 0
+         AND COUNT(ue.exercise_id) = COUNT(e.id)
+    ) completed_courses
+    `,
+    [userId]
+  );
+
+  return Number(row?.cnt || 0);
+}
+
 module.exports = {
   isCompleted,
   create,
-  countByUser
+  countByUser,
+  countCompletedCoursesByUser
 };

@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+WORKDIR /var/www/html
+
+# Заглушка для флага, которую перезапишет твой контроллер
+RUN echo "flag{dummy}" > /flag.txt
+
+# Создаем папку с логами и фейковые файлы
+RUN mkdir logs && \
+   echo "[2026-03-25 10:00:01] GET /index.html 200 OK" > logs/access.log && \
+   echo "[2026-03-25 10:05:22] POST /api/login 401 Unauthorized" >> logs/access.log && \
+   echo "[CRITICAL] Database connection failed at port 3306" > logs/error.log
+
+COPY package*.json ./
+RUN npm init -y && npm install express
+COPY . .
+
+EXPOSE 80
+CMD ["node", "app.js"]

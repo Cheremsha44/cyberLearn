@@ -1,5 +1,24 @@
 const UserModel = require('../models/userModel');
+const exerciseModel = require('../models/exerciseModel');
 const userExerciseModel = require('../models/userExerciseModel');
+
+function resolveLevelByProgress(completedExercises, totalExercises) {
+  if (totalExercises <= 0) {
+    return 'Beginner';
+  }
+
+  const progressRatio = completedExercises / totalExercises;
+
+  if (progressRatio >= 2 / 3) {
+    return 'Advanced';
+  }
+
+  if (progressRatio >= 1 / 3) {
+    return 'Intermediate';
+  }
+
+  return 'Beginner';
+}
 
 async function getMe(userId) {
   const user = await UserModel.findById(userId);
@@ -9,6 +28,9 @@ async function getMe(userId) {
   }
 
   const completedExercises = await userExerciseModel.countByUser(userId);
+  const completedCourses = await userExerciseModel.countCompletedCoursesByUser(userId);
+  const totalExercises = await exerciseModel.countPublished();
+  const derivedLevel = resolveLevelByProgress(completedExercises, totalExercises);
 
   return {
     id: user.id,
@@ -17,8 +39,9 @@ async function getMe(userId) {
     role: user.role,
     avatar: user.avatar,
     bio: user.bio,
-    level: user.level,
+    level: derivedLevel,
     study_hours: user.study_hours,
+    completed_courses: completedCourses,
     completed_exercises: completedExercises,
     created_at: user.created_at
   };

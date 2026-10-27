@@ -78,9 +78,22 @@ async function findForAccessById(exerciseId) {
   return rows[0];
 }
 
+async function countPublished() {
+  const [[row]] = await db.query(
+    `
+    SELECT COUNT(*) AS cnt
+    FROM exercises
+    WHERE is_published = 1
+    `
+  );
+
+  return Number(row?.cnt || 0);
+}
+
 module.exports = {
   findByCodeAndOrder,
   findAllByCode,
   findAllWithStatus,
-  findForAccessById
+  findForAccessById,
+  countPublished
 };

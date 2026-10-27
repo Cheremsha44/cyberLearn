@@ -1,0 +1,88 @@
+.app-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(900px 500px at 10% -10%, rgba(14, 165, 233, 0.2), transparent 65%),
+    radial-gradient(700px 420px at 90% -5%, rgba(16, 185, 129, 0.12), transparent 68%),
+    linear-gradient(180deg, #020617 0%, #030712 56%, #01040d 100%);
+}
+
+.app-shell-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.app-shell-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
+  background-size: 62px 62px;
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.75) 0%, transparent 75%);
+  opacity: 0.35;
+}
+
+.app-shell-particles {
+  position: absolute;
+  inset: -24vh 0 0;
+}
+
+.app-shell-particle {
+  position: absolute;
+  left: var(--x);
+  top: -20vh;
+  opacity: var(--opacity);
+  color: rgba(125, 211, 252, 0.88);
+  font-size: var(--size);
+  font-weight: 700;
+  font-family: "Consolas", "Courier New", monospace;
+  letter-spacing: 0.08em;
+  text-shadow:
+    0 0 8px rgba(56, 189, 248, 0.42),
+    0 0 18px rgba(16, 185, 129, 0.16);
+  animation: app-shell-fall var(--duration) linear infinite;
+  animation-delay: var(--delay);
+  user-select: none;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+.app-shell-particle:nth-child(3n) {
+  color: rgba(52, 211, 153, 0.8);
+}
+
+.dashboard-main {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes app-shell-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -10vh, 0) rotate(0deg);
+  }
+
+  8% {
+    opacity: var(--opacity);
+  }
+
+  50% {
+    transform: translate3d(var(--drift), 56vh, 0) rotate(14deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(var(--drift) * -0.25), 132vh, 0) rotate(28deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell-particle {
+    animation-duration: calc(var(--duration) + 8s);
+    opacity: calc(var(--opacity) + 0.08);
+  }
+}
